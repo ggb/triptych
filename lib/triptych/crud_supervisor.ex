@@ -1,6 +1,6 @@
 
 
-defmodule CrudSupervisor do
+defmodule Triptych.CrudSupervisor do
 
 
 end

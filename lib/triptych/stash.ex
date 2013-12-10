@@ -1,5 +1,5 @@
 
-defmodule Stash do
+defmodule Triptych.Stash do
 
 
 end
