@@ -9,7 +9,7 @@ defmodule Crud do
   # low-level 
   #
   def init(init_memo) do
-    { :ok, { HashDict.new [], HashDict.new [], HashDict.new [] }}
+    { :ok, { HashDict.new([]), HashDict.new([]), HashDict.new([]) }}
   end
   
   def handle_cast({ :add, triple }, { sub, pre, obj }) do
