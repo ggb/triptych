@@ -17,44 +17,25 @@ defmodule Triptych.Crud do
   end  
   
   # find triples: there are many, many possible cases...
-  def handle_call({ :find, { subject, predicate, object } }, dicts = { sub, pre, obj }) do
-    found = HashDict.get(sub, subject, []) ++ HashDict.get(pre, predicate, []) ++ HashDict.get(obj, object, []) |> Enum.uniq
-    { :reply, found, dicts }
-  end
-  
-  def handle_call({ :find, { subject, predicate, :blank } }, dicts = { sub, pre, _obj }) do
-    found = HashDict.get(sub, subject, []) ++ HashDict.get(pre, predicate, []) |> Enum.uniq
-    { :reply, found, dicts }
-  end
-  
-  def handle_call({ :find, { subject, :blank, :blank } }, dicts = { sub, _pre, _obj }) do
-    found = HashDict.get(sub, subject, [])
-    { :reply, found, dicts }
-  end
-  
-  def handle_call({ :find, { :blank, predicate, object } }, dicts = { _sub, pre, obj }) do
-    found = HashDict.get(pre, predicate, []) ++ HashDict.get(obj, object, []) |> Enum.uniq
-    { :reply, found, dicts }
-  end
-  
-  def handle_call({ :find, { :blank, :blank, object } }, dicts = { _sub, _pre, obj }) do
-    found = HashDict.get(obj, object, [])
-    { :reply, found, dicts }
-  end
-  
-  def handle_call({ :find, { subject, :blank, object } }, dicts = { sub, _pre, obj }) do
-    found = HashDict.get(sub, subject, []) ++ HashDict.get(obj, object, []) |> Enum.uniq
-    { :reply, found, dicts }
-  end
-  
-  def handle_call({ :find, { :blank, predicate, :blank } }, dicts = { _sub, pre, _obj }) do
-    found = HashDict.get(pre, predicate, [])
-    { :reply, found, dicts }
-  end
-  
-  # get all
-  def handle_call({ :find, { :blank, :blank, :blank } }, dicts = { sub, _pre, _obj }) do
-    found = HashDict.values(sub) |> Enum.reduce [], fn(ele, acc) -> ele ++ acc end 
+  def handle_call({ :find, triple }, _from, dicts = { sub, pre, obj }) do
+    case triple do
+      { :blank, :blank, :blank }     ->
+        found = HashDict.values(sub) |> Enum.reduce HashSet.new, &HashSet.union/2
+      { :blank, :blank, object }     ->
+        found = dict_get obj, object
+      { :blank, predicate, :blank }  ->
+        found = dict_get pre, predicate
+      { subject, :blank, :blank }    ->
+        found = dict_get sub, subject
+      { subject, predicate, :blank }  ->
+        found = HashSet.intersection dict_get(sub, subject), dict_get(pre, predicate)
+      { :blank, predicate, object }  ->
+        found = HashSet.intersection dict_get(obj, object), dict_get(pre, predicate)
+      { subject, :blank, object }    ->
+        found = HashSet.intersection dict_get(sub, subject), dict_get(obj, object)
+      { subject, predicate, object } -> 	
+	    found = HashSet.intersection HashSet.new([{ subject, predicate, object }]), dict_get(sub, subject) 
+    end
     { :reply, found, dicts }
   end
   
@@ -70,7 +51,7 @@ defmodule Triptych.Crud do
   end
   
   def find(triple) do
-    :gen_server.call( @process_name, { :find, triple } )
+    :gen_server.call( @process_name, { :find, triple } ) |> HashSet.to_list
   end
   
   # def update do
@@ -85,19 +66,21 @@ defmodule Triptych.Crud do
     find({ :blank, :blank, :blank }) 
   end
 
-
   #
   # Helper
   #
   def add_helper(key, value, dict) do
     if(HashDict.has_key?(dict, key)) do
       # Update list
-      l = HashDict.get dict, key
-      HashDict.update dict, key, [ value | l ]
+      HashDict.update! dict, key, fn(set) -> HashSet.union(set, HashSet.new([ value ])) end
     else
       # Create list, add value
-      HashDict.put dict, key, [ value ]
+      HashDict.put dict, key, HashSet.new([ value ])
     end
+  end
+  
+  def dict_get(dict, key) do
+    HashDict.get( dict, key, HashSet.new ) 
   end
 
 end
