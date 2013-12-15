@@ -10,7 +10,10 @@ defmodule Triptych.Mixfile do
 
   # Configuration for the OTP application
   def application do
-    [mod: { Triptych, [] }]
+    [
+      mod: { Triptych, { HashDict.new([]), HashDict.new([]), HashDict.new([]) } },
+      registered: [ :triptych_memo ]
+    ]
   end
 
   # Returns the list of dependencies in the format:

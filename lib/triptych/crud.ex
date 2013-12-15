@@ -8,16 +8,17 @@ defmodule Triptych.Crud do
   #
   # low-level 
   #
-  def init(init_memo) do
-    { :ok, { HashDict.new(init_memo), HashDict.new(init_memo), HashDict.new(init_memo) }}
+  def init(stash_pid) do
+    current = Triptych.Stash.get_value stash_pid
+    { :ok, { current, stash_pid }}
   end
   
-  def handle_cast({ :add, triple = { subject, predicate, object } }, { sub, pre, obj }) do
-    { :noreply, { add_helper(subject, triple, sub), add_helper(predicate, triple, pre), add_helper(object, triple, obj) } }
+  def handle_cast({ :add, triple = { subject, predicate, object } }, { { sub, pre, obj }, stash_pid } ) do
+    { :noreply, { { add_helper(subject, triple, sub), add_helper(predicate, triple, pre), add_helper(object, triple, obj) }, stash_pid } }
   end  
   
   # find triples: there are many, many possible cases...
-  def handle_call({ :find, triple }, _from, dicts = { sub, pre, obj }) do
+  def handle_call({ :find, triple }, _from, { dicts = { sub, pre, obj }, stash_pid } ) do
     case triple do
       { :blank, :blank, :blank }     ->
         found = HashDict.values(sub) |> Enum.reduce HashSet.new, &HashSet.union/2
@@ -36,14 +37,18 @@ defmodule Triptych.Crud do
       { subject, predicate, object } -> 	
 	    found = HashSet.intersection HashSet.new([{ subject, predicate, object }]), dict_get(sub, subject) 
     end
-    { :reply, found, dicts }
+    { :reply, found, { dicts, stash_pid } }
+  end
+  
+  def terminate(_reason, { current, stash_pid }) do
+    Triptych.Stash.save_value stash_pid, current  
   end
   
   #  
   # API  
   #
-  def start_link(init_memo) do
-    :gen_server.start_link({ :local, @process_name }, __MODULE__, init_memo, [])
+  def start_link(stash_pid) do
+    :gen_server.start_link({ :local, @process_name }, __MODULE__, stash_pid, [])
   end
   
   def add(triple) do
