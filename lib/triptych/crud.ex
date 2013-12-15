@@ -13,9 +13,13 @@ defmodule Triptych.Crud do
     { :ok, { current, stash_pid }}
   end
   
-  def handle_cast({ :add, triple = { subject, predicate, object } }, { { sub, pre, obj }, stash_pid } ) do
+  def handle_cast({ :add, triple = { subject, predicate, object } }, { { sub, pre, obj }, stash_pid }) do
     { :noreply, { { add_helper(subject, triple, sub), add_helper(predicate, triple, pre), add_helper(object, triple, obj) }, stash_pid } }
-  end  
+  end 
+  
+  def handle_cast({ :delete, triple = { subject, predicate, object } }, { { sub, pre, obj }, stash_pid }) do 
+    { :noreply, { { delete_helper(subject, sub), delete_helper(predicate, pre), delete_helper(object, obj) }, stash_pid } }
+  end 
   
   # find triples: there are many, many possible cases...
   def handle_call({ :find, triple }, _from, { dicts = { sub, pre, obj }, stash_pid } ) do
@@ -52,7 +56,12 @@ defmodule Triptych.Crud do
   end
   
   def add(triple) do
-    :gen_server.cast( @process_name, { :add, triple } )
+    if is_triple? triple do
+      :gen_server.cast( @process_name, { :add, triple } )
+    else
+      IO.puts "Sorry, this is not a triple:"
+      IO.inspect triple
+    end
   end
   
   def find(triple) do
@@ -84,8 +93,21 @@ defmodule Triptych.Crud do
     end
   end
   
+  def delete_helper(key, dict) do
+    # ToDo
+    dict
+  end
+  
   def dict_get(dict, key) do
     HashDict.get( dict, key, HashSet.new ) 
+  end
+  
+  def is_triple?({ _fst, _scd, _thr }) do
+    true
+  end
+  
+  def is_triple?(err_value) do
+    false
   end
 
 end
