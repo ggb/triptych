@@ -1,7 +1,6 @@
-
 defmodule Triptych.Supervisor do
 
-  use Supervisor.Behaviour
+  use Supervisor
 
   def start_link(init) do
     result = { :ok, sup } = :supervisor.start_link(__MODULE__, [init])

@@ -1,7 +1,6 @@
-
 defmodule Triptych.Crud do 
 
-  use GenServer.Behaviour
+  use GenServer
   
   @process_name :triptych_memo
   
@@ -17,30 +16,31 @@ defmodule Triptych.Crud do
     { :noreply, { { add_helper(subject, triple, sub), add_helper(predicate, triple, pre), add_helper(object, triple, obj) }, stash_pid } }
   end 
   
-  def handle_cast({ :delete, triple = { subject, predicate, object } }, { { sub, pre, obj }, stash_pid }) do 
+  def handle_cast({ :delete, { subject, predicate, object } }, { { sub, pre, obj }, stash_pid }) do 
     { :noreply, { { delete_helper(subject, sub), delete_helper(predicate, pre), delete_helper(object, obj) }, stash_pid } }
   end 
   
   # find triples: there are many, many possible cases...
   def handle_call({ :find, triple }, _from, { dicts = { sub, pre, obj }, stash_pid } ) do
-    case triple do
-      { :blank, :blank, :blank }     ->
-        found = HashDict.values(sub) |> Enum.reduce HashSet.new, &HashSet.union/2
-      { :blank, :blank, object }     ->
-        found = dict_get obj, object
-      { :blank, predicate, :blank }  ->
-        found = dict_get pre, predicate
-      { subject, :blank, :blank }    ->
-        found = dict_get sub, subject
-      { subject, predicate, :blank }  ->
-        found = HashSet.intersection dict_get(sub, subject), dict_get(pre, predicate)
-      { :blank, predicate, object }  ->
-        found = HashSet.intersection dict_get(obj, object), dict_get(pre, predicate)
-      { subject, :blank, object }    ->
-        found = HashSet.intersection dict_get(sub, subject), dict_get(obj, object)
-      { subject, predicate, object } -> 	
-	    found = HashSet.intersection HashSet.new([{ subject, predicate, object }]), dict_get(sub, subject) 
-    end
+    found =
+      case triple do
+        { :blank, :blank, :blank }     ->
+          Map.values(sub) |> Enum.reduce(MapSet.new, &MapSet.union/2)
+        { :blank, :blank, object }     ->
+          dict_get obj, object
+        { :blank, predicate, :blank }  ->
+          dict_get pre, predicate
+        { subject, :blank, :blank }    ->
+          dict_get sub, subject
+        { subject, predicate, :blank }  ->
+          MapSet.intersection dict_get(sub, subject), dict_get(pre, predicate)
+        { :blank, predicate, object }  ->
+          MapSet.intersection dict_get(obj, object), dict_get(pre, predicate)
+        { subject, :blank, object }    ->
+          MapSet.intersection dict_get(sub, subject), dict_get(obj, object)
+        { subject, predicate, object } -> 	
+          MapSet.intersection MapSet.new([{ subject, predicate, object }]), dict_get(sub, subject) 
+      end
     { :reply, found, { dicts, stash_pid } }
   end
   
@@ -65,7 +65,7 @@ defmodule Triptych.Crud do
   end
   
   def find(triple) do
-    :gen_server.call( @process_name, { :find, triple } ) |> HashSet.to_list
+    :gen_server.call( @process_name, { :find, triple } ) |> MapSet.to_list
   end
   
   # def update do
@@ -84,29 +84,29 @@ defmodule Triptych.Crud do
   # Helper
   #
   def add_helper(key, value, dict) do
-    if(HashDict.has_key?(dict, key)) do
+    if(Map.has_key?(dict, key)) do
       # Update list
-      HashDict.update! dict, key, fn(set) -> HashSet.union(set, HashSet.new([ value ])) end
+      Map.update! dict, key, fn(set) -> MapSet.union(set, MapSet.new([ value ])) end
     else
       # Create list, add value
-      HashDict.put dict, key, HashSet.new([ value ])
+      Map.put dict, key, MapSet.new([ value ])
     end
   end
   
-  def delete_helper(key, dict) do
+  def delete_helper(_key, dict) do
     # ToDo
     dict
   end
   
   def dict_get(dict, key) do
-    HashDict.get( dict, key, HashSet.new ) 
+    Map.get( dict, key, MapSet.new ) 
   end
   
   def is_triple?({ _fst, _scd, _thr }) do
     true
   end
   
-  def is_triple?(err_value) do
+  def is_triple?(_err_value) do
     false
   end
 

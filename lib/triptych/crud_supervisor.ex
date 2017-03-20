@@ -1,8 +1,6 @@
-
-
 defmodule Triptych.CrudSupervisor do
 
-  use Supervisor.Behaviour
+  use Supervisor
   
   def start_link(stash_pid) do
     :supervisor.start_link(__MODULE__, stash_pid)

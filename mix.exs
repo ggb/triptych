@@ -4,14 +4,14 @@ defmodule Triptych.Mixfile do
   def project do
     [ app: :triptych,
       version: "0.0.1",
-      elixir: "~> 0.11.3-dev",
+      elixir: ">= 1.3.4",
       deps: deps ]
   end
 
   # Configuration for the OTP application
   def application do
     [
-      mod: { Triptych, { HashDict.new([]), HashDict.new([]), HashDict.new([]) } },
+      mod: { Triptych, { Map.new([]), Map.new([]), Map.new([]) } },
       registered: [ :triptych_memo ]
     ]
   end

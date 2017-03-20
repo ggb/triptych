@@ -1,7 +1,7 @@
 
 defmodule Triptych.Stash do
 
-  use GenServer.Behaviour
+  use GenServer
   
   def start_link(current) do
     :gen_server.start_link( __MODULE__, current, [] )
