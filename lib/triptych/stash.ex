@@ -1,4 +1,3 @@
-
 defmodule Triptych.Stash do
 
   use GenServer

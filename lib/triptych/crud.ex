@@ -73,7 +73,7 @@ defmodule Triptych.Crud do
   # end
   
   def delete(triple) do
-    :gen_server.call( @process_name, { :delete, triple } )
+    :gen_server.cast( @process_name, { :delete, triple } )
   end
   
   def all() do
@@ -93,13 +93,12 @@ defmodule Triptych.Crud do
     end
   end
   
-  def delete_helper(_key, dict) do
-    # ToDo
-    dict
+  def delete_helper(key, dict) do
+    Map.delete(dict, key)
   end
   
   def dict_get(dict, key) do
-    Map.get( dict, key, MapSet.new ) 
+    Map.get(dict, key, MapSet.new) 
   end
   
   def is_triple?({ _fst, _scd, _thr }) do
@@ -111,4 +110,3 @@ defmodule Triptych.Crud do
   end
 
 end
-

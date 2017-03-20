@@ -1,23 +1,26 @@
 defmodule TriptychTest do
   use ExUnit.Case
   
-  Triptych.Crud.start_link []
-  Triptych.Crud.add { :pony, :color, :brown }
-  Triptych.Crud.add { :house, :color, :red }
-  Triptych.Crud.add { :pony, :age, 9 }
-  Triptych.Crud.add { :random, "age", 9 }
-  
-  
+  setup do
+    Triptych.Crud.start_link []
+    Triptych.Crud.add { :pony, :color, :brown }
+    Triptych.Crud.add { :house, :color, :red }
+    Triptych.Crud.add { :pony, :age, 9 }
+    Triptych.Crud.add { :random, "age", 9 }
+  end
+
   test "it is possible to add triples" do
     Triptych.Crud.add { :squirrel, :color, :brown }
     assert(Triptych.Crud.find({ :squirrel, :color, :brown }) == [{ :squirrel, :color, :brown }])
   end
   
   test "querying triples works fine. First example. " do
+    Triptych.Crud.add { :squirrel, :color, :brown }
     assert((Triptych.Crud.find({ :blank, :color, :blank }) |> Enum.sort) == ([{ :squirrel, :color, :brown }, { :pony, :color, :brown }, { :house, :color, :red }] |> Enum.sort ))
   end   
   
   test "querying triples works fine. Second example. " do
+    Triptych.Crud.add { :squirrel, :color, :brown }
     assert((Triptych.Crud.find({ :blank, :color, :brown }) |> Enum.sort) == ([{ :squirrel, :color, :brown }, { :pony, :color, :brown }] |> Enum.sort ))
   end 
   
@@ -30,12 +33,19 @@ defmodule TriptychTest do
   end 
   
   test "tt is possible to get all triples at once" do
+    Triptych.Crud.add { :squirrel, :color, :brown }
     assert((Triptych.Crud.all |> Enum.count) == 5 )
   end
   
   test "if you add a triple twice, you will only find it once" do
     Triptych.Crud.add { :squirrel, :color, :brown }
     assert(Triptych.Crud.find({ :squirrel, :color, :brown }) == [{ :squirrel, :color, :brown }])
+  end
+
+  test "deletion works as expected" do
+    Triptych.Crud.add { :dog, :name, "chewie" } 
+    Triptych.Crud.delete { :dog, :name, "chewie" } 
+    assert(Triptych.Crud.find({ :dog, :name, "chewie" }) == [])
   end
     
 end
